@@ -51,7 +51,7 @@ class Renderer:
         if self._initialized:
             return
         
-        self.ctx = moderngl.create_context()
+        self.ctx = moderngl.create_context(require=330)
 
         self._build_programs()
         self._build_geometry()
