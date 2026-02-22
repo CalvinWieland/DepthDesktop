@@ -1,17 +1,37 @@
 import sys
 import os
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QVBoxLayout, 
-                             QLabel, QWidget, QStackedWidget, QHBoxLayout, QToolBar, QGraphicsOpacityEffect, QGraphicsDropShadowEffect)
-from PyQt6.QtGui import QIcon, QPixmap, QFont, QAction, QColor
-from PyQt6.QtCore import Qt, QSize, QPropertyAnimation, QPoint, QEasingCurve
+                             QLabel, QWidget, QStackedWidget, QHBoxLayout, QToolBar, QGraphicsOpacityEffect)
+from PyQt6.QtGui import QIcon, QPixmap, QFont, QAction
+from PyQt6.QtCore import Qt, QThread, pyqtSignal, QSize, QPropertyAnimation, QPoint, QEasingCurve
+from faceTracking import runTracker
+from datetime import datetime, timedelta
+import platform
+import subprocess
+
+class TrackerThread(QThread):
+    # This signal will send: (z_depth, real_y, real_x, xDirection)
+    data_received = pyqtSignal(float, float, float, int, int)
+
+    def run(self):
+        # This runs in the background
+        for update in runTracker(False):
+            # update is (corrected_z_depth, real_y, real_x, xDirection)
+            self.data_received.emit(*update)
 
 class DesktopApp(QMainWindow):
+    invalidTime = datetime.now()
+
     def __init__(self):
         super().__init__()
 
         self.setWindowTitle("PyQt6 OS Simulator")
         self.resize(800, 500)
         self.setStyleSheet("background-color: #981E32; color: white;")
+
+        self.tracker_thread = TrackerThread()
+        self.tracker_thread.data_received.connect(self.handle_tracker_update)
+        self.tracker_thread.start()
 
         self.current_index = 0
         self.card_width = 250
@@ -45,6 +65,22 @@ class DesktopApp(QMainWindow):
         # 4. Initial Positioning
         self.update_carousel(animate=False)
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+
+    def handle_tracker_update(self, z, y, x, directionX, directionY):
+        # if direction is left or right, move icon left/right
+        if (datetime.now() > self.invalidTime):
+            if directionX == 1:
+                self.current_index = (self.current_index + 1) % len(self.apps)
+                self.update_carousel()
+                self.invalidTime = datetime.now() + timedelta(milliseconds=500)
+            elif directionX == -1:
+                self.current_index = (self.current_index - 1) % len(self.apps)
+                self.update_carousel()
+                self.invalidTime = datetime.now() + timedelta(milliseconds=500)
+            elif directionY == 1:
+                selected_app = self.apps[self.current_index]['name']
+                self.launch_app(selected_app)
+                self.invalidTime = datetime.now() + timedelta(milliseconds=500)
 
     def create_actions(self):
         self.exit_action = QAction("&Exit", self)
@@ -118,9 +154,7 @@ class DesktopApp(QMainWindow):
         else:
             self.strip.move(new_x, new_y)
 
-    def keyPressEvent(self, event):
-        """Handle Left and Right arrow key presses."""
-        
+    def keyPressEvent(self, event):        
         if event.key() == Qt.Key.Key_Right:
             self.current_index = (self.current_index + 1) % len(self.apps)
             self.update_carousel()
@@ -137,17 +171,29 @@ class DesktopApp(QMainWindow):
             super().keyPressEvent(event)
 
     def launch_app(self, name):
-            
-        if name == "Browser":
-            os.startfile("iexplore.exe")
-        elif name == "Files":
-            os.startfile("explorer.exe")
-        elif name == "Terminal":
-            os.startfile("wt.exe")
-        elif name == "Settings":
-            os.startfile("ms-settings:")
+        
+        if platform.system() == 'Darwin':
+            if name == "Browser":
+                subprocess.run(["open", "-a", "Firefox"])
+            elif name == "Files":
+                subprocess.run(["open", "-a", "Finder"])
+            elif name == "Terminal":
+                subprocess.run(["open", "-a", "Terminal"])
+            elif name == "Settings":
+                subprocess.run(["open", "-a", "System Settings"])
+            else:
+                print("Error")
         else:
-            print("Error")
+            if name == "Browser":
+                os.startfile("iexplore.exe")
+            elif name == "Files":
+                os.startfile("explorer.exe")
+            elif name == "Terminal":
+                os.startfile("wt.exe")
+            elif name == "Settings":
+                os.startfile("ms-settings:")
+            else:
+                print("Error")
 
 
 if __name__ == "__main__":

@@ -41,16 +41,15 @@ def visualize_pupils(image, detection_result) -> np.ndarray:
                     cv2.circle(annotated_image, keypoint_px, 3, (0, 0, 255), -1)
             elif idx in IRIS_OUTLINES:
                 keypoint_px = _normalized_to_pixel_coordinates(landmark.x, landmark.y, width, height)
-                if keypoint_px:
+                if keypoint_px: 
                     cv2.circle(annotated_image, keypoint_px, 1, (0, 255, 0), -1)
 
     return annotated_image
 
-# run the program
-if __name__ == '__main__':
+def runTracker(useCv2):
     MODEL_FILE = 'face_landmarker_v2_with_blendshapes.task'
 
-    print("Initializing Depth Tracker...")
+    #print("Initializing Depth Tracker...")
     
     base_options = python.BaseOptions(model_asset_path=MODEL_FILE)
     options = vision.FaceLandmarkerOptions(
@@ -64,12 +63,12 @@ if __name__ == '__main__':
     landmarker = vision.FaceLandmarker.create_from_options(options)
 
     cap = cv2.VideoCapture(0)
-    
+
     if not cap.isOpened():
         print("Error: Could not open webcam.")
         exit()
 
-    print("Webcam opened! Estimating depth... Press 'q' to quit.")
+    #print("Webcam opened! Estimating depth... Press 'q' to quit.")
     start_time = time.time()
 
     last_mid = (0,0)
@@ -78,6 +77,8 @@ if __name__ == '__main__':
         ret, frame = cap.read()
         if not ret:
             break
+
+        corrected_z_depth, real_y, real_x, xDirection, yDirection = 0, 0, 0, 0, 0
             
         frame = cv2.flip(frame, 1)
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -111,15 +112,28 @@ if __name__ == '__main__':
                     mid_y = int((left_px[1] + right_px[1]) / 2)
                     mid_px = (mid_x, mid_y)
 
+                    # 0 is none, -1 is left, 1 is right
+                    xDirection = 0
                     if (last_mid[0] - mid_px[0] > 15):
-                        cv2.putText(annotated_image, f"Going left", 
-                            (30, 220), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+                        xDirection = -1
+                        if (useCv2):
+                            cv2.putText(annotated_image, f"Going left", 
+                                (30, 220), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
                         
                     if (last_mid[0] - mid_px[0] < -15):
-                        cv2.putText(annotated_image, f"Going right", 
-                            (30, 240), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+                        xDirection = 1
+                        if (useCv2):
+                            cv2.putText(annotated_image, f"Going right", 
+                                (30, 240), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+                            
+                    if (last_mid[1] - mid_px[1] > 10):
+                        yDirection = 1
+                        if (useCv2):
+                            cv2.putText(annotated_image, f"Going up", 
+                                (30, 260), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
                     
-                    cv2.circle(annotated_image, mid_px, 3, (0, 0, 255), -1)
+                    if (useCv2):
+                        cv2.circle(annotated_image, mid_px, 3, (0, 0, 255), -1)
 
                     # get angle
                     angleX = (35 - ((mid_x / width) * 70))
@@ -137,25 +151,37 @@ if __name__ == '__main__':
                     real_y = corrected_z_depth * math.tan(rad_y)
                     real_z = corrected_z_depth
 
-                    # display data
-                    cv2.putText(annotated_image, f"True Depth (Z): {real_z:.2f} ft", 
-                                (30, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
-                    cv2.putText(annotated_image, f"Left/Right (X): {real_x:.2f} ft", 
-                                (30, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 0), 2)
-                    cv2.putText(annotated_image, f"Up/Down (Y): {-real_y:.2f} ft",
-                                (30, 110), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 0), 2)
-                    cv2.putText(annotated_image, f"Angle X: {angleX:.1f} deg", 
-                                (30, 150), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 255), 2)
-                    cv2.putText(annotated_image, f"Raw Dist: {raw_distance:.2f} ft", 
-                                (30, 180), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+                    if (useCv2):
+                        # display data
+                        cv2.putText(annotated_image, f"True Depth (Z): {real_z:.2f} ft", 
+                                    (30, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+                        cv2.putText(annotated_image, f"Left/Right (X): {real_x:.2f} ft", 
+                                    (30, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 0), 2)
+                        cv2.putText(annotated_image, f"Up/Down (Y): {-real_y:.2f} ft",
+                                    (30, 110), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 0), 2)
+                        cv2.putText(annotated_image, f"Angle X: {angleX:.1f} deg", 
+                                    (30, 150), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 255), 2)
+                        cv2.putText(annotated_image, f"Raw Dist: {raw_distance:.2f} ft", 
+                                    (30, 180), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
                     
                     last_mid = mid_px
-                    
-        cv2.imshow('MediaPipe Depth Tracker', annotated_image)
 
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
+        if (useCv2):
+            cv2.imshow('MediaPipe Depth Tracker', annotated_image)
+
+        if (useCv2):   
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
+
+        yield corrected_z_depth, real_y, real_x, xDirection, yDirection
 
     cap.release()
-    cv2.destroyAllWindows()
+    if (useCv2):   
+        cv2.destroyAllWindows()
     landmarker.close()
+
+# run the program
+if __name__ == '__main__':
+    for update in runTracker(True):
+        #print(f"UI received: {update}")
+        continue
