@@ -131,6 +131,12 @@ def runTracker(useCv2):
                         if (useCv2):
                             cv2.putText(annotated_image, f"Going up", 
                                 (30, 260), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+                            
+                    if (last_mid[1] - mid_px[1] < -30):
+                        yDirection = -1
+                        if (useCv2):
+                            cv2.putText(annotated_image, f"Going down", 
+                                (30, 260), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
                     
                     if (useCv2):
                         cv2.circle(annotated_image, mid_px, 3, (0, 0, 255), -1)
@@ -173,7 +179,7 @@ def runTracker(useCv2):
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
 
-        yield corrected_z_depth, real_y, real_x, xDirection, yDirection
+        yield corrected_z_depth, angleY, angleX, xDirection, yDirection
 
     cap.release()
     if (useCv2):   
