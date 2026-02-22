@@ -46,14 +46,12 @@ class Renderer:
 
         Expected Qt usage:
         - Call from widget initialization path once a Qt GL context is current
-          (for example, from `initializeGL`).
         - Safe to call once; repeated calls currently no-op.
         """
         if self._initialized:
             return
         
         self.ctx = moderngl.create_context()
-        self.ctx.gl_mode = 
 
         self._build_programs()
         self._build_geometry()
@@ -126,12 +124,15 @@ class Renderer:
 
     def _prepare_frame(self) -> None:
         """Bind targets, clear buffers, and upload frame uniforms/state."""
+        self.ctx.clear(0.08, 0.08, 0.10, 1.0) # Dark gray background
 
     def _draw_scene(self) -> None:
         """Issue draw calls for the current scene."""
+        return
 
     def _finalize_frame(self) -> None:
         """Run post-processing/present steps if required."""
+        return
 
     @staticmethod
     def _release_collection(resources: dict[str, Any]) -> None:
