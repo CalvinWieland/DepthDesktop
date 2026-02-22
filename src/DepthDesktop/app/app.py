@@ -129,7 +129,7 @@ class DesktopApp(QMainWindow):
             self.update_carousel()
 
         elif event.key() == Qt.Key.Key_Return:
-            selected_app = self.apps[self.stack.currentIndex()]['name']
+            selected_app = self.apps[self.current_index]['name']
             self.launch_app(selected_app)
 
         else:
