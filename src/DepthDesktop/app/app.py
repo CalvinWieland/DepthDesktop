@@ -1,8 +1,8 @@
 import sys
 import os
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QVBoxLayout, 
-                             QLabel, QWidget, QStackedWidget, QHBoxLayout, QToolBar)
-from PyQt6.QtGui import QIcon, QPixmap, QFont, QAction
+                             QLabel, QWidget, QStackedWidget, QHBoxLayout, QToolBar, QGraphicsOpacityEffect, QGraphicsDropShadowEffect)
+from PyQt6.QtGui import QIcon, QPixmap, QFont, QAction, QColor
 from PyQt6.QtCore import Qt, QSize, QPropertyAnimation, QPoint, QEasingCurve
 
 class DesktopApp(QMainWindow):
@@ -99,7 +99,15 @@ class DesktopApp(QMainWindow):
         # Update visual focus (Opacity effect)
         for i, card in enumerate(self.cards):
             card.setGraphicsEffect(None)
-            card.setStyleSheet("opacity: 1.0;" if i == self.current_index else "opacity: 0.3;")
+
+            if i == self.current_index:
+                opacity = 1
+            else:
+                opacity = 0.5
+
+            fade = QGraphicsOpacityEffect()
+            fade.setOpacity(opacity)
+            card.setGraphicsEffect(fade)
 
         if animate:
             self.anim = QPropertyAnimation(self.strip, b"pos")
