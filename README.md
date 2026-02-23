@@ -7,4 +7,6 @@
 `/rendering` : ModernGL renderer + camera
 
 `/tracking` : MediaPipe, head pose estimation
+
+Made for the 2026 CrimsonCode Hackathon at WSU. 
  
